@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import CoastalScene from "@/components/scene/CoastalScene";
-import Header from "@/components/ui/Header";
-import SceneHint from "@/components/ui/SceneHint";
 import RpgQuestModal from "@/components/ui/RpgQuestModal";
 import ScrollsVerticalModal from "@/components/ui/ScrollsVerticalModal";
 import {
@@ -15,19 +13,14 @@ import { sounds } from "@/lib/sound";
 
 export default function Home() {
   const [reaction, setReaction] = useState<CharacterReaction>("wave");
+
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [xp, setXp] = useState(0);
   const [xpGain, setXpGain] = useState<number | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [isScrollsModalOpen, setIsScrollsModalOpen] = useState(false);
-  const [activeQuest, setActiveQuest] = useState<MerchantSkillQuest | null>(null);
-
-  // Sound Toggle
-  const handleToggleSound = () => {
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    sounds.enabled = next;
-    if (next) sounds.playClick();
-  };
+  const [activeQuest, setActiveQuest] = useState<MerchantSkillQuest | null>(
+    null
+  );
 
   // Open the vertical scrolls modal when clicking on the grimoire / scroll on the desk
   const handleOpenScrollsModal = () => {
@@ -83,20 +76,6 @@ export default function Home() {
         onBellClick={handleBellClick}
         onOpenScrollsModal={handleOpenScrollsModal}
       />
-
-      {/* 2. Interactive Overlay (Top Header com XP + Atalho Pergaminhos + Hint) */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 sm:p-5 md:p-6 z-10">
-        <Header
-          xp={xp}
-          xpGain={xpGain}
-          soundEnabled={soundEnabled}
-          onToggleSound={handleToggleSound}
-          onRestart={handleRestart}
-          onOpenScrolls={handleOpenScrollsModal}
-        />
-
-        <SceneHint />
-      </div>
 
       {/* 3. Modal Vertical com os 4 Grandes Pergaminhos */}
       <ScrollsVerticalModal

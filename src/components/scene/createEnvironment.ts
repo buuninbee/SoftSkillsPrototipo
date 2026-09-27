@@ -5,334 +5,879 @@ export interface EnvironmentController {
   update: (time: number) => void;
 }
 
+/**
+ * Creates a procedural retro-styled cobblestone canvas texture
+ */
+function createCobblestoneTexture(): THREE.CanvasTexture {
+  if (typeof document === "undefined") {
+    const fallback = { width: 1, height: 1 } as unknown as HTMLCanvasElement;
+    return new THREE.CanvasTexture(fallback);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Mortar / grout base
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const stoneColors = [
+      "#64748b",
+      "#475569",
+      "#94a3b8",
+      "#6b7280",
+      "#4b5563",
+      "#71717a",
+      "#52525b",
+    ];
+
+    const rows = 16;
+    const cols = 16;
+    const cellW = canvas.width / cols;
+    const cellH = canvas.height / rows;
+
+    for (let r = 0; r < rows; r++) {
+      const offsetX = r % 2 === 0 ? 0 : cellW * 0.5;
+      for (let c = -1; c <= cols; c++) {
+        const x = c * cellW + offsetX + 3;
+        const y = r * cellH + 3;
+        const w = cellW - 6;
+        const h = cellH - 6;
+
+        const color = stoneColors[(r * 7 + c * 13 + 31) % stoneColors.length];
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, [5]);
+        ctx.fill();
+
+        // Stone bevel highlight
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y + h - 2);
+        ctx.lineTo(x + 2, y + 2);
+        ctx.lineTo(x + w - 2, y + 2);
+        ctx.stroke();
+
+        // Stone bevel shadow
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + w - 2, y + 2);
+        ctx.lineTo(x + w - 2, y + h - 2);
+        ctx.lineTo(x + 2, y + h - 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(8, 8);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 export function createEnvironment(scene: THREE.Scene): EnvironmentController {
-  const islandGroup = new THREE.Group();
-  scene.add(islandGroup);
+  const envGroup = new THREE.Group();
+  scene.add(envGroup);
 
-  // Materials
-  const waterMat = new THREE.MeshStandardMaterial({
-    color: 0x06b6d4, // Vibrant turquoise ocean
-    roughness: 0.1,
-    metalness: 0.1,
-    transparent: true,
-    opacity: 0.88,
-    flatShading: true,
-  });
-
-  const foamMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.65,
-  });
-
-  const sandMat = new THREE.MeshStandardMaterial({
-    color: 0xfde047, // Golden sunny beach sand
-    roughness: 0.8,
-    flatShading: true,
-  });
-
-  const grassMat = new THREE.MeshStandardMaterial({
-    color: 0x4ade80, // Lush tropical grass
-    roughness: 0.7,
-    flatShading: true,
-  });
-
+  // Common Materials
   const woodMat = new THREE.MeshStandardMaterial({
-    color: 0x92400e,
-    roughness: 0.6,
+    color: 0x78350f, // Dark rustic oak timber
+    roughness: 0.7,
     flatShading: true,
   });
 
   const darkWoodMat = new THREE.MeshStandardMaterial({
-    color: 0x78350f,
-    roughness: 0.7,
-    flatShading: true,
-  });
-
-  const palmLeafMat = new THREE.MeshStandardMaterial({
-    color: 0x16a34a,
-    roughness: 0.4,
-    flatShading: true,
-  });
-
-  const stoneMat = new THREE.MeshStandardMaterial({
-    color: 0x94a3b8,
+    color: 0x451a03,
     roughness: 0.8,
     flatShading: true,
   });
 
-  const redMat = new THREE.MeshStandardMaterial({
-    color: 0xef4444,
-    roughness: 0.3,
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: 0x475569, // Grey stone blocks
+    roughness: 0.85,
+    flatShading: true,
   });
 
-  const whiteMat = new THREE.MeshStandardMaterial({
-    color: 0xf8fafc,
-    roughness: 0.3,
+  const plasterMat = new THREE.MeshStandardMaterial({
+    color: 0xfde68a, // Warm medieval cream plaster
+    roughness: 0.9,
+    flatShading: true,
   });
 
-  const yellowLightMat = new THREE.MeshBasicMaterial({
-    color: 0xfef08a,
-    transparent: true,
-    opacity: 0.35,
+  const roofMat = new THREE.MeshStandardMaterial({
+    color: 0x991b1b, // Deep terracotta / rustic red shingles
+    roughness: 0.65,
+    flatShading: true,
   });
 
-  // 1. Water surface (wave animated plane)
-  const waterGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
-  waterGeo.rotateX(-Math.PI / 2);
-  const waterMesh = new THREE.Mesh(waterGeo, waterMat);
-  waterMesh.position.y = -0.05;
-  scene.add(waterMesh);
-
-  // Foam ring around island
-  const foamGeo = new THREE.RingGeometry(4.8, 5.8, 32);
-  foamGeo.rotateX(-Math.PI / 2);
-  const foamMesh = new THREE.Mesh(foamGeo, foamMat);
-  foamMesh.position.y = 0.02;
-  scene.add(foamMesh);
-
-  // 2. Island Base (Sand cylinder)
-  const sandGeo = new THREE.CylinderGeometry(5.0, 6.0, 1.4, 24);
-  const sandMesh = new THREE.Mesh(sandGeo, sandMat);
-  sandMesh.position.y = 0.6;
-  sandMesh.receiveShadow = true;
-  islandGroup.add(sandMesh);
-
-  // Grass plateau (terrace)
-  const grassGeo = new THREE.CylinderGeometry(4.2, 4.5, 0.45, 24);
-  const grassMesh = new THREE.Mesh(grassGeo, grassMat);
-  grassMesh.position.y = 1.4;
-  grassMesh.receiveShadow = true;
-  islandGroup.add(grassMesh);
-
-  // Secondary elevated hill
-  const hillGeo = new THREE.CylinderGeometry(2.0, 2.4, 0.6, 18);
-  const hillMesh = new THREE.Mesh(hillGeo, grassMat);
-  hillMesh.position.set(-1.8, 1.85, -1.2);
-  hillMesh.receiveShadow = true;
-  islandGroup.add(hillMesh);
-
-  // Wooden dock / pier extending towards front
-  const dockGroup = new THREE.Group();
-  dockGroup.position.set(0, 0.9, 4.4);
-  for (let i = 0; i < 4; i++) {
-    const plankGeo = new THREE.BoxGeometry(1.6, 0.12, 0.35);
-    const plank = new THREE.Mesh(plankGeo, woodMat);
-    plank.position.set(0, 0.06, i * 0.4);
-    plank.castShadow = true;
-    plank.receiveShadow = true;
-    dockGroup.add(plank);
-  }
-  islandGroup.add(dockGroup);
-
-  // 3. Lighthouse on the hill
-  const lighthouseGroup = new THREE.Group();
-  lighthouseGroup.position.set(-2.2, 2.15, -1.3);
-
-  const lhBase = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.7, 0.8, 0.3, 12),
-    stoneMat
-  );
-  lighthouseGroup.add(lhBase);
-
-  const tower1 = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.65, 0.6, 12),
-    redMat
-  );
-  tower1.position.y = 0.45;
-  const tower2 = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.48, 0.55, 0.6, 12),
-    whiteMat
-  );
-  tower2.position.y = 1.05;
-  const tower3 = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.42, 0.48, 0.6, 12),
-    redMat
-  );
-  tower3.position.y = 1.65;
-  const tower4 = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.36, 0.42, 0.5, 12),
-    whiteMat
-  );
-  tower4.position.y = 2.15;
-  lighthouseGroup.add(tower1, tower2, tower3, tower4);
-
-  const balcony = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.46, 0.46, 0.08, 12),
-    darkWoodMat
-  );
-  balcony.position.y = 2.45;
-  const lantern = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.28, 0.35, 8),
-    yellowLightMat
-  );
-  lantern.position.y = 2.65;
-  const lhRoof = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.4, 12), redMat);
-  lhRoof.position.y = 2.95;
-  lighthouseGroup.add(balcony, lantern, lhRoof);
-
-  // Rotating light beam
-  const lightBeamGeo = new THREE.ConeGeometry(1.6, 6, 12);
-  lightBeamGeo.rotateX(Math.PI / 2);
-  lightBeamGeo.translate(0, 0, 3);
-  const lightBeam = new THREE.Mesh(lightBeamGeo, yellowLightMat);
-  lightBeam.position.y = 2.65;
-  lighthouseGroup.add(lightBeam);
-
-  islandGroup.add(lighthouseGroup);
-
-  // 4. Palm Trees
-  const createPalmTree = (x: number, z: number, scale = 1, rotationY = 0) => {
-    const tree = new THREE.Group();
-    tree.position.set(x, 1.45, z);
-    tree.scale.set(scale, scale, scale);
-    tree.rotation.y = rotationY;
-
-    let prevY = 0;
-    let prevX = 0;
-    for (let i = 0; i < 5; i++) {
-      const segGeo = new THREE.CylinderGeometry(
-        0.12 - i * 0.012,
-        0.14 - i * 0.012,
-        0.45,
-        7
-      );
-      const seg = new THREE.Mesh(segGeo, woodMat);
-      seg.castShadow = true;
-      const lean = (i + 1) * 0.06;
-      seg.position.set(prevX + lean * 0.15, prevY + 0.22, 0);
-      seg.rotation.z = -lean * 0.4;
-      tree.add(seg);
-      prevY += 0.4;
-      prevX += lean * 0.15;
-    }
-
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const leafGeo = new THREE.ConeGeometry(0.35, 1.6, 4);
-      leafGeo.rotateX(Math.PI / 2.6);
-      const leaf = new THREE.Mesh(leafGeo, palmLeafMat);
-      leaf.position.set(prevX, prevY + 0.1, 0);
-      leaf.rotation.y = angle;
-      leaf.rotation.z = -0.3;
-      leaf.castShadow = true;
-      tree.add(leaf);
-    }
-
-    const coconutGeo = new THREE.SphereGeometry(0.09, 6, 6);
-    const coco1 = new THREE.Mesh(coconutGeo, darkWoodMat);
-    coco1.position.set(prevX + 0.08, prevY - 0.02, 0.06);
-    const coco2 = new THREE.Mesh(coconutGeo, darkWoodMat);
-    coco2.position.set(prevX - 0.08, prevY - 0.02, -0.06);
-    tree.add(coco1, coco2);
-
-    return tree;
-  };
-
-  islandGroup.add(createPalmTree(2.6, -0.6, 1.1, 0.3));
-  islandGroup.add(createPalmTree(3.0, 1.5, 0.9, 1.2));
-  islandGroup.add(createPalmTree(-2.8, 1.8, 0.85, 2.1));
-  islandGroup.add(createPalmTree(-3.4, -0.4, 0.95, -0.8));
-
-  // Rocks
-  const rockGeo = new THREE.DodecahedronGeometry(0.28, 0);
-  const rocks = [
-    { x: 2.1, y: 1.45, z: 2.2, s: 0.8 },
-    { x: -1.6, y: 1.45, z: 2.8, s: 1.1 },
-    { x: 3.5, y: 0.7, z: -2.0, s: 1.3 },
-  ];
-  rocks.forEach((r) => {
-    const rock = new THREE.Mesh(rockGeo, stoneMat);
-    rock.position.set(r.x, r.y, r.z);
-    rock.scale.set(r.s, r.s * 0.7, r.s);
-    rock.rotation.set(Math.random(), Math.random(), Math.random());
-    rock.castShadow = true;
-    rock.receiveShadow = true;
-    islandGroup.add(rock);
+  const goldBrassMat = new THREE.MeshStandardMaterial({
+    color: 0xf59e0b,
+    metalness: 0.8,
+    roughness: 0.25,
   });
 
-  // 5. Stylized Clouds
-  const cloudsGroup = new THREE.Group();
-  scene.add(cloudsGroup);
-
-  const cloudMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
+  const steelMat = new THREE.MeshStandardMaterial({
+    color: 0xd1d5db,
+    metalness: 0.85,
     roughness: 0.2,
     flatShading: true,
   });
 
-  const createCloud = (x: number, y: number, z: number, scale = 1) => {
-    const c = new THREE.Group();
-    c.position.set(x, y, z);
-    c.scale.set(scale, scale, scale);
+  const ironMat = new THREE.MeshStandardMaterial({
+    color: 0x1f2937,
+    metalness: 0.6,
+    roughness: 0.5,
+  });
 
-    const sphereGeo = new THREE.DodecahedronGeometry(0.8, 1);
-    const p1 = new THREE.Mesh(sphereGeo, cloudMat);
-    const p2 = new THREE.Mesh(sphereGeo, cloudMat);
-    p2.position.set(0.7, -0.1, 0);
-    p2.scale.set(0.75, 0.75, 0.75);
-    const p3 = new THREE.Mesh(sphereGeo, cloudMat);
-    p3.position.set(-0.7, -0.15, 0);
-    p3.scale.set(0.7, 0.7, 0.7);
-    const p4 = new THREE.Mesh(sphereGeo, cloudMat);
-    p4.position.set(0.2, 0.45, 0.1);
-    p4.scale.set(0.65, 0.65, 0.65);
+  const windowGlowMat = new THREE.MeshStandardMaterial({
+    color: 0xfef08a,
+    emissive: 0xfbbf24,
+    emissiveIntensity: 0.7,
+    roughness: 0.2,
+  });
 
-    c.add(p1, p2, p3, p4);
-    return c;
+  const fireMat = new THREE.MeshBasicMaterial({
+    color: 0xf97316,
+  });
+
+  // 1. Cobblestone Plaza Ground
+  const cobbleTex = createCobblestoneTexture();
+  const groundGeo = new THREE.PlaneGeometry(32, 32);
+  groundGeo.rotateX(-Math.PI / 2);
+  const groundMat = new THREE.MeshStandardMaterial({
+    map: cobbleTex,
+    roughness: 0.8,
+    metalness: 0.1,
+  });
+  const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  groundMesh.position.y = 1.48; // Floor level right where character stands
+  groundMesh.receiveShadow = true;
+  envGroup.add(groundMesh);
+
+  // Stone curbs & plaza borders
+  for (let i = -1; i <= 1; i += 2) {
+    const curbGeo = new THREE.BoxGeometry(0.35, 0.16, 20);
+    const curb = new THREE.Mesh(curbGeo, stoneMat);
+    curb.position.set(i * 5.2, 1.56, 0);
+    curb.receiveShadow = true;
+    envGroup.add(curb);
+  }
+
+  // 2. Imposing Adventurer Guild / Tavern Facade in the Background
+  const guildGroup = new THREE.Group();
+  guildGroup.position.set(0, 1.48, -5.2);
+
+  // Stone Foundation Base
+  const foundation = new THREE.Mesh(
+    new THREE.BoxGeometry(11.5, 1.1, 2.2),
+    stoneMat
+  );
+  foundation.position.set(0, 0.55, 0);
+  foundation.receiveShadow = true;
+  foundation.castShadow = true;
+  guildGroup.add(foundation);
+
+  // First Floor Plaster Body
+  const firstFloor = new THREE.Mesh(
+    new THREE.BoxGeometry(11.0, 2.0, 2.0),
+    plasterMat
+  );
+  firstFloor.position.set(0, 2.1, 0);
+  firstFloor.receiveShadow = true;
+  firstFloor.castShadow = true;
+  guildGroup.add(firstFloor);
+
+  // Second Floor (Jetty Overhang)
+  const secondFloor = new THREE.Mesh(
+    new THREE.BoxGeometry(11.4, 1.9, 2.3),
+    plasterMat
+  );
+  secondFloor.position.set(0, 4.05, 0.15);
+  secondFloor.receiveShadow = true;
+  secondFloor.castShadow = true;
+  guildGroup.add(secondFloor);
+
+  // Timber framing beams (horizontal & vertical struts)
+  const addBeam = (
+    w: number,
+    h: number,
+    d: number,
+    x: number,
+    y: number,
+    z: number,
+    rotZ = 0
+  ) => {
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), darkWoodMat);
+    beam.position.set(x, y, z);
+    beam.rotation.z = rotZ;
+    beam.castShadow = true;
+    guildGroup.add(beam);
   };
 
-  const cloud1 = createCloud(-7, 6.5, -4, 1.2);
-  const cloud2 = createCloud(8, 7.8, -6, 1.5);
-  const cloud3 = createCloud(6, 5.8, 5, 0.9);
-  const cloud4 = createCloud(-8, 6.2, 4, 1.1);
-  cloudsGroup.add(cloud1, cloud2, cloud3, cloud4);
+  // Horizontal floor dividing beams
+  addBeam(11.6, 0.18, 0.2, 0, 1.15, 1.05);
+  addBeam(11.6, 0.22, 0.25, 0, 3.1, 1.25);
+  addBeam(11.6, 0.22, 0.25, 0, 5.0, 1.25);
 
-  // 6. Floating Sparkles
-  const sparkleCount = 20;
-  const sparkleGeo = new THREE.OctahedronGeometry(0.08, 0);
+  // Vertical timber pillars
+  for (const x of [-5.2, -3.2, -1.3, 1.3, 3.2, 5.2]) {
+    addBeam(0.18, 2.0, 0.15, x, 2.1, 1.05);
+    addBeam(0.18, 1.9, 0.18, x, 4.05, 1.32);
+  }
+
+  // Diagonal cross-bracing struts on upper floor
+  addBeam(0.12, 1.4, 0.12, -2.25, 4.05, 1.33, 0.65);
+  addBeam(0.12, 1.4, 0.12, -2.25, 4.05, 1.33, -0.65);
+  addBeam(0.12, 1.4, 0.12, 2.25, 4.05, 1.33, 0.65);
+  addBeam(0.12, 1.4, 0.12, 2.25, 4.05, 1.33, -0.65);
+
+  // Medieval Peaked Roof
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(8.2, 2.6, 4),
+    roofMat
+  );
+  roof.position.set(0, 6.3, 0.15);
+  roof.rotation.y = Math.PI / 4;
+  roof.scale.set(1.1, 1.0, 0.65);
+  roof.castShadow = true;
+  guildGroup.add(roof);
+
+  // Grand Entrance Arched Wooden Door
+  const doorGroup = new THREE.Group();
+  doorGroup.position.set(0, 1.1, 1.02);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.0, 0.12), darkWoodMat);
+  doorGroup.add(door);
+
+  // Door iron hinges & knocker
+  for (const dy of [-0.6, 0.5]) {
+    const hinge = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.16), ironMat);
+    hinge.position.set(0, dy, 0);
+    doorGroup.add(hinge);
+  }
+  const knocker = new THREE.Mesh(
+    new THREE.TorusGeometry(0.1, 0.025, 8, 12),
+    goldBrassMat
+  );
+  knocker.position.set(0.35, 0.1, 0.08);
+  doorGroup.add(knocker);
+  guildGroup.add(doorGroup);
+
+  // Glowing Upper Floor Leaded Windows
+  for (const wx of [-3.2, 0, 3.2]) {
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(0.9, 1.1, 0.1),
+      windowGlowMat
+    );
+    win.position.set(wx, 4.1, 1.3);
+    guildGroup.add(win);
+
+    // Window cross frame
+    const hFrame = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.06, 0.12), darkWoodMat);
+    hFrame.position.set(wx, 4.1, 1.32);
+    const vFrame = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.12, 0.12), darkWoodMat);
+    vFrame.position.set(wx, 4.1, 1.32);
+    guildGroup.add(hFrame, vFrame);
+  }
+
+  // Hanging Guild Tavern Sign
+  const signGroup = new THREE.Group();
+  signGroup.position.set(1.4, 2.7, 1.1);
+  const signBracket = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.08, 0.75),
+    ironMat
+  );
+  signBracket.position.set(0, 0, 0.35);
+  signGroup.add(signBracket);
+
+  const signBoard = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.65, 0.7),
+    woodMat
+  );
+  signBoard.position.set(0, -0.36, 0.45);
+  signBoard.castShadow = true;
+  signGroup.add(signBoard);
+
+  const emblem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.18, 0.08, 8),
+    goldBrassMat
+  );
+  emblem.rotation.z = Math.PI / 2;
+  emblem.position.set(0, -0.36, 0.45);
+  signGroup.add(emblem);
+  guildGroup.add(signGroup);
+
+  // Guild Chimney with rising smoke puffs
+  const chimney = new THREE.Mesh(
+    new THREE.BoxGeometry(0.85, 4.2, 0.85),
+    stoneMat
+  );
+  chimney.position.set(-4.2, 4.8, 0);
+  chimney.castShadow = true;
+  guildGroup.add(chimney);
+
+  const smokeCount = 7;
+  const smokeParticles: THREE.Mesh[] = [];
+  const smokeGeo = new THREE.DodecahedronGeometry(0.22, 1);
+  const smokeMat = new THREE.MeshStandardMaterial({
+    color: 0x94a3b8,
+    roughness: 0.9,
+    transparent: true,
+    opacity: 0.5,
+    flatShading: true,
+  });
+
+  for (let i = 0; i < smokeCount; i++) {
+    const sm = new THREE.Mesh(smokeGeo, smokeMat);
+    sm.position.set(
+      -4.2 + (Math.random() - 0.5) * 0.2,
+      7.0 + i * 0.4,
+      (Math.random() - 0.5) * 0.2
+    );
+    guildGroup.add(sm);
+    smokeParticles.push(sm);
+  }
+
+  // Wall Torches with warm glow on either side of entrance
+  const torches: { mesh: THREE.Mesh; light: THREE.PointLight }[] = [];
+  for (const tx of [-1.5, 1.5]) {
+    const bracket = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.35, 6),
+      ironMat
+    );
+    bracket.position.set(tx, 2.2, 1.15);
+    bracket.rotation.x = Math.PI / 4;
+    guildGroup.add(bracket);
+
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.07, 0.2, 6),
+      fireMat
+    );
+    flame.position.set(tx, 2.38, 1.28);
+    guildGroup.add(flame);
+
+    const tLight = new THREE.PointLight(0xf59e0b, 1.4, 4.5);
+    tLight.position.set(tx, 2.45, 1.35);
+    guildGroup.add(tLight);
+
+    torches.push({ mesh: flame, light: tLight });
+  }
+
+  envGroup.add(guildGroup);
+
+  // 3. Quest Board (Tábua de Avisos de Missões) on the Right
+  const questBoardGroup = new THREE.Group();
+  questBoardGroup.position.set(3.4, 1.48, -0.6);
+  questBoardGroup.rotation.y = -0.4; // Tilted slightly towards center/camera
+
+  // Rustic Wooden Posts
+  for (const px of [-0.9, 0.9]) {
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.1, 2.4, 8),
+      darkWoodMat
+    );
+    post.position.set(px, 1.2, 0);
+    post.castShadow = true;
+    questBoardGroup.add(post);
+  }
+
+  // Backing Notice Board
+  const board = new THREE.Mesh(
+    new THREE.BoxGeometry(1.9, 1.25, 0.08),
+    woodMat
+  );
+  board.position.set(0, 1.45, 0);
+  board.castShadow = true;
+  questBoardGroup.add(board);
+
+  // Little canopy roof on top of board
+  const boardRoof = new THREE.Mesh(
+    new THREE.BoxGeometry(2.1, 0.08, 0.45),
+    darkWoodMat
+  );
+  boardRoof.position.set(0, 2.1, 0.08);
+  boardRoof.rotation.x = 0.2;
+  boardRoof.castShadow = true;
+  questBoardGroup.add(boardRoof);
+
+  // "QUESTS" Sign Banner
+  const signBanner = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.22, 0.04),
+    goldBrassMat
+  );
+  signBanner.position.set(0, 2.22, 0.1);
+  questBoardGroup.add(signBanner);
+
+  // Pinned Parchment Notes
+  const parchmentMat = new THREE.MeshStandardMaterial({
+    color: 0xfef3c7,
+    roughness: 0.8,
+  });
+  const waxPinMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c });
+
+  const notesConfig = [
+    { x: -0.5, y: 1.6, w: 0.42, h: 0.5, rot: 0.06 },
+    { x: 0.1, y: 1.65, w: 0.48, h: 0.42, rot: -0.04 },
+    { x: 0.55, y: 1.55, w: 0.38, h: 0.52, rot: 0.12 },
+    { x: -0.3, y: 1.15, w: 0.46, h: 0.4, rot: -0.08 },
+    { x: 0.35, y: 1.18, w: 0.44, h: 0.44, rot: 0.05 },
+  ];
+
+  notesConfig.forEach((cfg) => {
+    const note = new THREE.Mesh(
+      new THREE.BoxGeometry(cfg.w, cfg.h, 0.01),
+      parchmentMat
+    );
+    note.position.set(cfg.x, cfg.y, 0.05);
+    note.rotation.z = cfg.rot;
+    questBoardGroup.add(note);
+
+    const pin = new THREE.Mesh(
+      new THREE.SphereGeometry(0.025, 6, 6),
+      waxPinMat
+    );
+    pin.position.set(cfg.x, cfg.y + cfg.h * 0.42, 0.06);
+    questBoardGroup.add(pin);
+  });
+
+  envGroup.add(questBoardGroup);
+
+  // 4. Weapon & Equipment Rack on the Left
+  const rackGroup = new THREE.Group();
+  rackGroup.position.set(-3.2, 1.48, -0.6);
+  rackGroup.rotation.y = 0.38;
+
+  // A-Frame Wooden Stand
+  const rackBase1 = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 1.5, 0.1),
+    darkWoodMat
+  );
+  rackBase1.position.set(-0.8, 0.75, 0);
+  rackBase1.rotation.z = -0.15;
+  const rackBase2 = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 1.5, 0.1),
+    darkWoodMat
+  );
+  rackBase2.position.set(0.8, 0.75, 0);
+  rackBase2.rotation.z = 0.15;
+
+  const rackBarTop = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 0.08, 0.08),
+    darkWoodMat
+  );
+  rackBarTop.position.set(0, 1.15, 0);
+
+  const rackBarBottom = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 0.08, 0.08),
+    darkWoodMat
+  );
+  rackBarBottom.position.set(0, 0.35, 0);
+
+  rackGroup.add(rackBase1, rackBase2, rackBarTop, rackBarBottom);
+
+  // Steel Longsword 1
+  const createSword = (x: number, rotZ = 0) => {
+    const sw = new THREE.Group();
+    sw.position.set(x, 0.75, 0.06);
+    sw.rotation.z = rotZ;
+
+    const blade = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.85, 0.02),
+      steelMat
+    );
+    blade.castShadow = true;
+    const crossguard = new THREE.Mesh(
+      new THREE.BoxGeometry(0.26, 0.04, 0.05),
+      goldBrassMat
+    );
+    crossguard.position.y = 0.42;
+    const grip = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.022, 0.18, 6),
+      darkWoodMat
+    );
+    grip.position.y = 0.52;
+    const pommel = new THREE.Mesh(
+      new THREE.SphereGeometry(0.04, 6, 6),
+      goldBrassMat
+    );
+    pommel.position.y = 0.63;
+
+    sw.add(blade, crossguard, grip, pommel);
+    return sw;
+  };
+
+  rackGroup.add(createSword(-0.4, 0.05));
+  rackGroup.add(createSword(-0.1, -0.04));
+
+  // Round Knight Shield
+  const shield = new THREE.Group();
+  shield.position.set(0.42, 0.7, 0.1);
+  const shieldFace = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.38, 0.38, 0.04, 16),
+    woodMat
+  );
+  shieldFace.rotation.x = Math.PI / 2;
+  const shieldRim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.38, 0.03, 8, 16),
+    ironMat
+  );
+  const shieldBoss = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 8, 8),
+    goldBrassMat
+  );
+  shieldBoss.position.z = 0.03;
+  shield.add(shieldFace, shieldRim, shieldBoss);
+  shield.castShadow = true;
+  rackGroup.add(shield);
+
+  // Leaning Spear
+  const spear = new THREE.Group();
+  spear.position.set(0.85, 0.85, 0.08);
+  spear.rotation.z = -0.22;
+  const spearShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 1.8, 8),
+    woodMat
+  );
+  const spearHead = new THREE.Mesh(
+    new THREE.ConeGeometry(0.06, 0.28, 6),
+    steelMat
+  );
+  spearHead.position.y = 0.95;
+  spear.add(spearShaft, spearHead);
+  rackGroup.add(spear);
+
+  // Stacked Barrels & Crates nearby
+  const crateMat = new THREE.MeshStandardMaterial({
+    color: 0x92400e,
+    roughness: 0.7,
+  });
+  const barrelMat = new THREE.MeshStandardMaterial({
+    color: 0x78350f,
+    roughness: 0.6,
+  });
+
+  const crate1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), crateMat);
+  crate1.position.set(-1.1, 0.3, 0.35);
+  crate1.castShadow = true;
+  rackGroup.add(crate1);
+
+  const barrel1 = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.28, 0.28, 0.7, 10),
+    barrelMat
+  );
+  barrel1.position.set(-1.0, 0.35, -0.4);
+  barrel1.castShadow = true;
+  rackGroup.add(barrel1);
+
+  envGroup.add(rackGroup);
+
+  // 5. Retro Low-Poly Heroes in Nostalgic Heroic Poses
+
+  // Hero 1: The Valiant Knight (Near Weapon Rack)
+  const knightGroup = new THREE.Group();
+  knightGroup.position.set(-2.0, 1.48, 0.2);
+  knightGroup.rotation.y = 0.45; // Facing slightly towards counter & weapon rack
+
+  // Legs & Armored Greaves
+  const legGeo = new THREE.BoxGeometry(0.18, 0.65, 0.18);
+  const leftLeg = new THREE.Mesh(legGeo, steelMat);
+  leftLeg.position.set(-0.14, 0.33, 0);
+  const rightLeg = new THREE.Mesh(legGeo, steelMat);
+  rightLeg.position.set(0.14, 0.33, 0);
+  knightGroup.add(leftLeg, rightLeg);
+
+  // Armored Torso / Breastplate
+  const torso = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.6, 0.3),
+    steelMat
+  );
+  torso.position.set(0, 0.95, 0);
+  torso.castShadow = true;
+  knightGroup.add(torso);
+
+  // Golden Guild Belt & Buckle
+  const belt = new THREE.Mesh(
+    new THREE.BoxGeometry(0.52, 0.1, 0.32),
+    goldBrassMat
+  );
+  belt.position.set(0, 0.68, 0);
+  knightGroup.add(belt);
+
+  // Pauldrons (Shoulder Armor)
+  const pauldronGeo = new THREE.SphereGeometry(0.14, 8, 8);
+  const leftPauldron = new THREE.Mesh(pauldronGeo, steelMat);
+  leftPauldron.position.set(-0.32, 1.2, 0);
+  const rightPauldron = new THREE.Mesh(pauldronGeo, steelMat);
+  rightPauldron.position.set(0.32, 1.2, 0);
+  knightGroup.add(leftPauldron, rightPauldron);
+
+  // Armored Arms
+  const armGeo = new THREE.BoxGeometry(0.14, 0.5, 0.14);
+  const leftArm = new THREE.Mesh(armGeo, steelMat);
+  leftArm.position.set(-0.32, 0.92, 0.05);
+  leftArm.rotation.x = -0.2; // Hand resting near hip/sword
+  const rightArm = new THREE.Mesh(armGeo, steelMat);
+  rightArm.position.set(0.32, 0.92, -0.05);
+  knightGroup.add(leftArm, rightArm);
+
+  // Sheathed Hip Sword
+  const hipSword = new THREE.Group();
+  hipSword.position.set(-0.32, 0.7, 0.08);
+  hipSword.rotation.x = 0.5;
+  const scabbard = new THREE.Mesh(
+    new THREE.BoxGeometry(0.06, 0.7, 0.03),
+    darkWoodMat
+  );
+  const hGrip = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.02, 0.15, 6),
+    goldBrassMat
+  );
+  hGrip.position.y = 0.42;
+  hipSword.add(scabbard, hGrip);
+  knightGroup.add(hipSword);
+
+  // Knight Helmet with Black Visor Slit
+  const helm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.38, 0.42, 0.38),
+    steelMat
+  );
+  helm.position.set(0, 1.48, 0);
+  helm.castShadow = true;
+  knightGroup.add(helm);
+
+  const visorSlit = new THREE.Mesh(
+    new THREE.BoxGeometry(0.28, 0.06, 0.05),
+    ironMat
+  );
+  visorSlit.position.set(0, 1.48, 0.18);
+  knightGroup.add(visorSlit);
+
+  // Red Knight Plume Feather on Top
+  const plumeMat = new THREE.MeshStandardMaterial({
+    color: 0xef4444, // Vibrant knight scarlet
+    roughness: 0.5,
+  });
+  const plume = new THREE.Mesh(
+    new THREE.ConeGeometry(0.09, 0.35, 6),
+    plumeMat
+  );
+  plume.position.set(0, 1.76, -0.05);
+  plume.rotation.x = -0.4;
+  knightGroup.add(plume);
+
+  // Heroic Crimson Cape
+  const cape = new THREE.Mesh(
+    new THREE.BoxGeometry(0.48, 0.95, 0.04),
+    plumeMat
+  );
+  cape.position.set(0, 0.85, -0.18);
+  cape.rotation.x = 0.1;
+  cape.castShadow = true;
+  knightGroup.add(cape);
+
+  envGroup.add(knightGroup);
+
+  // Hero 2: The Arcane Mage / Scholar (Studying Quest Board)
+  const mageGroup = new THREE.Group();
+  mageGroup.position.set(2.1, 1.48, 0.2);
+  mageGroup.rotation.y = -0.55; // Looking directly at quest board
+
+  const robeMat = new THREE.MeshStandardMaterial({
+    color: 0x312e81, // Deep arcane indigo
+    roughness: 0.65,
+    flatShading: true,
+  });
+
+  const robeTrimMat = new THREE.MeshStandardMaterial({
+    color: 0xf59e0b, // Golden runes/trim
+    roughness: 0.3,
+  });
+
+  // Flowing Robe Skirt (Cone/Cylinder)
+  const skirt = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.42, 0.85, 10),
+    robeMat
+  );
+  skirt.position.set(0, 0.42, 0);
+  skirt.castShadow = true;
+  mageGroup.add(skirt);
+
+  // Upper Robe Torso
+  const mageTorso = new THREE.Mesh(
+    new THREE.BoxGeometry(0.44, 0.55, 0.26),
+    robeMat
+  );
+  mageTorso.position.set(0, 0.95, 0);
+  mageTorso.castShadow = true;
+  mageGroup.add(mageTorso);
+
+  // Gold Embroidered Stole/Sash
+  const stole = new THREE.Mesh(
+    new THREE.BoxGeometry(0.46, 0.58, 0.04),
+    robeTrimMat
+  );
+  stole.position.set(0, 0.95, 0.12);
+  mageGroup.add(stole);
+
+  // Mage Hooded Head
+  const hood = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 8, 8),
+    robeMat
+  );
+  hood.position.set(0, 1.42, 0);
+  hood.castShadow = true;
+  mageGroup.add(hood);
+
+  // Pointed Wizard Hat
+  const hatBrim = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.42, 0.42, 0.04, 12),
+    robeMat
+  );
+  hatBrim.position.set(0, 1.55, 0);
+  const hatCone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.28, 0.65, 10),
+    robeMat
+  );
+  hatCone.position.set(0, 1.88, -0.05);
+  hatCone.rotation.x = -0.15;
+  hatCone.castShadow = true;
+  mageGroup.add(hatBrim, hatCone);
+
+  // Mystic Arcane Staff
+  const staff = new THREE.Group();
+  staff.position.set(0.38, 0.85, 0.18);
+  const staffShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.024, 0.024, 1.7, 8),
+    darkWoodMat
+  );
+  const staffCrystalMat = new THREE.MeshStandardMaterial({
+    color: 0x38bdf8,
+    emissive: 0x0284c7,
+    emissiveIntensity: 0.9,
+    roughness: 0.1,
+  });
+  const staffCrystal = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.09, 0),
+    staffCrystalMat
+  );
+  staffCrystal.position.y = 0.9;
+  staff.add(staffShaft, staffCrystal);
+  mageGroup.add(staff);
+
+  // Spellbook at waist
+  const book = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, 0.24, 0.32),
+    new THREE.MeshStandardMaterial({ color: 0x831843 })
+  );
+  book.position.set(-0.25, 0.72, 0.05);
+  book.rotation.y = 0.3;
+  mageGroup.add(book);
+
+  envGroup.add(mageGroup);
+
+  // 6. Medieval Street Lanterns on Plaza Edges
+  const lanterns: { light: THREE.PointLight; flame: THREE.Mesh }[] = [];
+  const createStreetLantern = (x: number, z: number) => {
+    const lamp = new THREE.Group();
+    lamp.position.set(x, 1.48, z);
+
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.09, 2.8, 8),
+      darkWoodMat
+    );
+    post.position.set(0, 1.4, 0);
+    post.castShadow = true;
+    lamp.add(post);
+
+    const crossArm = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.08, 0.08),
+      ironMat
+    );
+    crossArm.position.set(0.15, 2.7, 0);
+    lamp.add(crossArm);
+
+    // Iron Lantern Housing
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.35, 0.24),
+      ironMat
+    );
+    box.position.set(0.38, 2.5, 0);
+    lamp.add(box);
+
+    const lFlame = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 6, 6),
+      windowGlowMat
+    );
+    lFlame.position.set(0.38, 2.5, 0);
+    lamp.add(lFlame);
+
+    const pLight = new THREE.PointLight(0xfef08a, 1.1, 5.0);
+    pLight.position.set(0.38, 2.5, 0);
+    lamp.add(pLight);
+
+    lanterns.push({ light: pLight, flame: lFlame });
+    return lamp;
+  };
+
+  envGroup.add(createStreetLantern(-4.4, 1.8));
+  envGroup.add(createStreetLantern(4.4, 1.8));
+
+  // 7. Ambient Morning Dust Motes & Golden Dawn Sparkles
+  const sparkleCount = 24;
+  const sparkleGeo = new THREE.OctahedronGeometry(0.05, 0);
   const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
   const sparkles: THREE.Mesh[] = [];
 
   for (let i = 0; i < sparkleCount; i++) {
     const sp = new THREE.Mesh(sparkleGeo, sparkleMat);
     sp.position.set(
-      (Math.random() - 0.5) * 8,
-      1.5 + Math.random() * 3.5,
-      (Math.random() - 0.5) * 8
+      (Math.random() - 0.5) * 9,
+      1.6 + Math.random() * 3.2,
+      (Math.random() - 0.5) * 6 - 0.5
     );
     sparkles.push(sp);
     scene.add(sp);
   }
 
-  // Update animation loop
+  // Animation Loop Update
   const update = (time: number) => {
-    lightBeam.rotation.z += 0.025;
+    // Gentle flicker for wall torches and lanterns
+    torches.forEach((t, idx) => {
+      const flicker = 1.0 + Math.sin(time * 12 + idx * 2.3) * 0.15;
+      t.light.intensity = 1.4 * flicker;
+      t.mesh.scale.set(flicker, flicker, flicker);
+    });
 
-    // Gentle wave undulation
-    const pos = waterGeo.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const u = pos.getX(i);
-      const v = pos.getY(i);
-      const z =
-        Math.sin(time * 1.8 + u * 0.6) * 0.06 +
-        Math.cos(time * 1.4 + v * 0.6) * 0.06;
-      pos.setZ(i, z);
-    }
-    pos.needsUpdate = true;
+    lanterns.forEach((l, idx) => {
+      const flicker = 1.0 + Math.cos(time * 10 + idx * 1.9) * 0.1;
+      l.light.intensity = 1.1 * flicker;
+    });
 
-    foamMesh.scale.setScalar(1 + Math.sin(time * 2) * 0.02);
+    // Chimney smoke slowly rising and cycling
+    smokeParticles.forEach((sm, idx) => {
+      sm.position.y += 0.012;
+      sm.position.x += Math.sin(time * 1.5 + idx) * 0.003;
+      sm.scale.setScalar(1 + (sm.position.y - 7.0) * 0.25);
+      if (sm.position.y > 9.2) {
+        sm.position.y = 7.0;
+        sm.position.x = -4.2 + (Math.random() - 0.5) * 0.15;
+      }
+    });
 
-    cloud1.position.x = -7 + Math.sin(time * 0.2) * 1.2;
-    cloud2.position.x = 8 + Math.cos(time * 0.15) * 1.4;
-    cloud3.position.x = 6 + Math.sin(time * 0.25) * 1.0;
-    cloud4.position.x = -8 + Math.cos(time * 0.18) * 1.1;
-
+    // Floating dawn dust motes
     sparkles.forEach((sp, idx) => {
-      sp.position.y += Math.sin(time * 2 + idx) * 0.003;
+      sp.position.y += Math.sin(time * 1.5 + idx) * 0.002;
       sp.rotation.y += 0.02;
     });
   };
 
-  return { islandGroup, update };
+  return { islandGroup: envGroup, update };
 }

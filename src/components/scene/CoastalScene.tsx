@@ -35,8 +35,8 @@ export default function CoastalScene({
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#7dd3fc"); // Sky blue
-    scene.fog = new THREE.FogExp2("#bae6fd", 0.02);
+    scene.background = new THREE.Color("#fed7aa"); // Warm golden dawn sky
+    scene.fog = new THREE.FogExp2("#fed7aa", 0.015);
 
     const camera = new THREE.PerspectiveCamera(
       42,
@@ -56,14 +56,14 @@ export default function CoastalScene({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    // 2. Lighting
-    const ambientLight = new THREE.AmbientLight("#ffffff", 1.25);
+    // 2. Lighting (Golden Dawn of Departure)
+    const ambientLight = new THREE.AmbientLight("#fff7ed", 1.3);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight("#bae6fd", "#fef3c7", 0.85);
+    const hemiLight = new THREE.HemisphereLight("#fef3c7", "#78350f", 0.9);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight("#fffbeb", 2.3);
+    const sunLight = new THREE.DirectionalLight("#fffbeb", 2.2);
     sunLight.position.set(10, 18, 12);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
@@ -71,7 +71,7 @@ export default function CoastalScene({
     sunLight.shadow.bias = -0.001;
     scene.add(sunLight);
 
-    // 3. Environment (Island, Ocean, Lighthouse, Clouds, Palms)
+    // 3. Environment (Medieval RPG Guild Plaza & Facade)
     const environment = createEnvironment(scene);
 
     // 4. Counter Desk (Balcão de Atendimento)
@@ -92,9 +92,11 @@ export default function CoastalScene({
       mouse.targetY = y;
     };
 
-    const handleMouseMove = (e: MouseEvent) => updatePointer(e.clientX, e.clientY);
+    const handleMouseMove = (e: MouseEvent) =>
+      updatePointer(e.clientX, e.clientY);
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) updatePointer(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length > 0)
+        updatePointer(e.touches[0].clientX, e.touches[0].clientY);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -110,7 +112,10 @@ export default function CoastalScene({
       raycaster.setFromCamera(mouseVector, camera);
 
       // 1. Check click on central 3D Grimoire / Scroll on counter
-      const scrollIntersects = raycaster.intersectObjects(desk.scrollTrigger, true);
+      const scrollIntersects = raycaster.intersectObjects(
+        desk.scrollTrigger,
+        true
+      );
       if (scrollIntersects.length > 0 && onOpenScrollsModal) {
         onOpenScrollsModal();
         return;
@@ -124,14 +129,20 @@ export default function CoastalScene({
       }
 
       // 3. Check click on character
-      const charIntersects = raycaster.intersectObjects(character.clickableObjects, true);
+      const charIntersects = raycaster.intersectObjects(
+        character.clickableObjects,
+        true
+      );
       if (charIntersects.length > 0 && onCharacterClick) {
         onCharacterClick();
         return;
       }
 
       // 4. Check click on whole desk
-      const deskIntersects = raycaster.intersectObjects(desk.group.children, true);
+      const deskIntersects = raycaster.intersectObjects(
+        desk.group.children,
+        true
+      );
       if (deskIntersects.length > 0 && onCharacterClick) {
         onCharacterClick();
       }

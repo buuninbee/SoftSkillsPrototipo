@@ -1,6 +1,9 @@
 import assert from "node:assert";
 import { DIALOGUE_STEPS, MERCHANT_SKILL_QUESTS } from "../src/data/dialogueData.ts";
 import { SCROLL_DEFINITIONS } from "../src/components/scene/createCounterDesk.ts";
+import { createEnvironment } from "../src/components/scene/createEnvironment.ts";
+
+assert.strictEqual(typeof createEnvironment, "function", "createEnvironment deve ser uma função exportada");
 
 // 1. Verify initial step matches user request ("Olá, Jogador")
 assert.ok(DIALOGUE_STEPS.length >= 3, "Devem existir pelo menos 3 etapas de diálogo");

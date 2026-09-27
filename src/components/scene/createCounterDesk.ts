@@ -275,26 +275,71 @@ export function createCounterDesk(): CounterDeskController {
 
   deskGroup.add(bellGroup);
 
-  // 4. Tropical Mini Plant on Desk (left side)
-  const potGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.14, 10);
-  const potMesh = new THREE.Mesh(potGeo, potMat);
-  potMesh.position.set(-1.08, 1.05, -0.15);
-  potMesh.castShadow = true;
-  deskGroup.add(potMesh);
+  // 4. Adventurer Magic Potion Vial & Medieval Candle on Desk (left side)
+  const potionGroup = new THREE.Group();
+  potionGroup.position.set(-1.08, 0.98, -0.15);
 
-  for (let i = 0; i < 4; i++) {
-    const leafGeo = new THREE.ConeGeometry(0.06, 0.16, 4);
-    const leaf = new THREE.Mesh(leafGeo, plantMat);
-    const angle = (i / 4) * Math.PI * 2;
-    leaf.position.set(
-      -1.08 + Math.cos(angle) * 0.04,
-      1.16,
-      -0.15 + Math.sin(angle) * 0.04
-    );
-    leaf.rotation.z = -0.3 * Math.cos(angle);
-    leaf.rotation.x = 0.3 * Math.sin(angle);
-    deskGroup.add(leaf);
-  }
+  const potionMat = new THREE.MeshStandardMaterial({
+    color: 0xec4899, // Glowing ruby health/elixir potion
+    roughness: 0.15,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.88,
+  });
+  const corkMat = new THREE.MeshStandardMaterial({
+    color: 0x78350f,
+    roughness: 0.8,
+  });
+
+  const potionFlask = new THREE.Mesh(
+    new THREE.SphereGeometry(0.075, 12, 12),
+    potionMat
+  );
+  potionFlask.position.y = 0.075;
+  potionFlask.castShadow = true;
+  potionGroup.add(potionFlask);
+
+  const flaskNeck = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.022, 0.03, 0.06, 8),
+    potionMat
+  );
+  flaskNeck.position.y = 0.15;
+  potionGroup.add(flaskNeck);
+
+  const cork = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.024, 0.018, 0.035, 8),
+    corkMat
+  );
+  cork.position.y = 0.18;
+  potionGroup.add(cork);
+  deskGroup.add(potionGroup);
+
+  // Medieval Brass Candlestick
+  const candleGroup = new THREE.Group();
+  candleGroup.position.set(-0.88, 0.98, -0.18);
+
+  const candleDish = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.07, 0.02, 10),
+    brassMat
+  );
+  candleDish.position.y = 0.01;
+  candleGroup.add(candleDish);
+
+  const candleWax = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 0.11, 8),
+    new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.8 })
+  );
+  candleWax.position.y = 0.065;
+  candleWax.castShadow = true;
+  candleGroup.add(candleWax);
+
+  const candleFlame = new THREE.Mesh(
+    new THREE.ConeGeometry(0.018, 0.05, 6),
+    new THREE.MeshBasicMaterial({ color: 0xf97316 })
+  );
+  candleFlame.position.y = 0.14;
+  candleGroup.add(candleFlame);
+  deskGroup.add(candleGroup);
 
   // 5. Large Central Grimoire / Open Scroll on the counter
   const grimoireGroup = new THREE.Group();
