@@ -1,69 +1,116 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import CoastalScene from "@/components/scene/CoastalScene";
+import Header from "@/components/ui/Header";
+import SceneHint from "@/components/ui/SceneHint";
+import RpgQuestModal from "@/components/ui/RpgQuestModal";
+import ScrollsVerticalModal from "@/components/ui/ScrollsVerticalModal";
+import {
+  CharacterReaction,
+  MerchantSkillQuest,
+  SkillQuestOption,
+} from "@/data/dialogueData";
+import { sounds } from "@/lib/sound";
 
 export default function Home() {
+  const [reaction, setReaction] = useState<CharacterReaction>("wave");
+  const [xp, setXp] = useState(0);
+  const [xpGain, setXpGain] = useState<number | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isScrollsModalOpen, setIsScrollsModalOpen] = useState(false);
+  const [activeQuest, setActiveQuest] = useState<MerchantSkillQuest | null>(null);
+
+  // Sound Toggle
+  const handleToggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    sounds.enabled = next;
+    if (next) sounds.playClick();
+  };
+
+  // Open the vertical scrolls modal when clicking on the grimoire / scroll on the desk
+  const handleOpenScrollsModal = () => {
+    sounds.playBell();
+    setReaction("happy");
+    setIsScrollsModalOpen(true);
+  };
+
+  // Selecting a quest from the vertical modal
+  const handleSelectQuestFromModal = (quest: MerchantSkillQuest) => {
+    setIsScrollsModalOpen(false);
+    sounds.playClick();
+    setReaction("think");
+    setActiveQuest(quest);
+  };
+
+  // Completion of an option inside the RPG Quest Modal
+  const handleCompleteSkillQuest = (option: SkillQuestOption) => {
+    sounds.playSuccess();
+    setXp((prev) => prev + option.xp);
+    setXpGain(option.xp);
+    setTimeout(() => setXpGain(null), 1400);
+    setReaction("celebrate");
+  };
+
+  // Restart
+  const handleRestart = () => {
+    sounds.playClick();
+    setXp(0);
+    setReaction("wave");
+    setIsScrollsModalOpen(false);
+    setActiveQuest(null);
+  };
+
+  // Click on Character
+  const handleCharacterClick = () => {
+    sounds.playPop();
+    setReaction((prev) => (prev === "celebrate" ? "wave" : "celebrate"));
+  };
+
+  // Click on Counter Bell
+  const handleBellClick = () => {
+    sounds.playBell();
+    setReaction("celebrate");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="relative w-screen h-screen overflow-hidden bg-sky-200 select-none">
+      {/* 1. 3D WebGL Layer (Balcão com Grimório Central + Mercador RPG + Balão 3D Centralizado e Ampliado) */}
+      <CoastalScene
+        reaction={reaction}
+        onCharacterClick={handleCharacterClick}
+        onBellClick={handleBellClick}
+        onOpenScrollsModal={handleOpenScrollsModal}
+      />
+
+      {/* 2. Interactive Overlay (Top Header com XP + Atalho Pergaminhos + Hint) */}
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 sm:p-5 md:p-6 z-10">
+        <Header
+          xp={xp}
+          xpGain={xpGain}
+          soundEnabled={soundEnabled}
+          onToggleSound={handleToggleSound}
+          onRestart={handleRestart}
+          onOpenScrolls={handleOpenScrollsModal}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <SceneHint />
+      </div>
+
+      {/* 3. Modal Vertical com os 4 Grandes Pergaminhos */}
+      <ScrollsVerticalModal
+        isOpen={isScrollsModalOpen}
+        onClose={() => setIsScrollsModalOpen(false)}
+        onSelectQuest={handleSelectQuestFromModal}
+      />
+
+      {/* 4. RPG Quest Modal ao selecionar uma das habilidades */}
+      <RpgQuestModal
+        quest={activeQuest}
+        onClose={() => setActiveQuest(null)}
+        onCompleteOption={handleCompleteSkillQuest}
+      />
+    </main>
   );
 }
