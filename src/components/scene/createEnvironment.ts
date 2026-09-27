@@ -172,9 +172,9 @@ export function createEnvironment(scene: THREE.Scene): EnvironmentController {
     envGroup.add(curb);
   }
 
-  // 2. Imposing Adventurer Guild / Tavern Facade in the Background
+  // 2. Tavern / Guild Facade positioned snug right behind the Merchant
   const guildGroup = new THREE.Group();
-  guildGroup.position.set(0, 1.48, -5.2);
+  guildGroup.position.set(0, 1.48, 0.35);
 
   // Stone Foundation Base
   const foundation = new THREE.Mesh(
@@ -375,8 +375,8 @@ export function createEnvironment(scene: THREE.Scene): EnvironmentController {
 
   // 3. Quest Board (Tábua de Avisos de Missões) on the Right
   const questBoardGroup = new THREE.Group();
-  questBoardGroup.position.set(3.4, 1.48, -0.6);
-  questBoardGroup.rotation.y = -0.4; // Tilted slightly towards center/camera
+  questBoardGroup.position.set(2.8, 1.48, 1.35);
+  questBoardGroup.rotation.y = -0.32;
 
   // Rustic Wooden Posts
   for (const px of [-0.9, 0.9]) {
@@ -452,8 +452,8 @@ export function createEnvironment(scene: THREE.Scene): EnvironmentController {
 
   // 4. Weapon & Equipment Rack on the Left
   const rackGroup = new THREE.Group();
-  rackGroup.position.set(-3.2, 1.48, -0.6);
-  rackGroup.rotation.y = 0.38;
+  rackGroup.position.set(-2.8, 1.48, 1.35);
+  rackGroup.rotation.y = 0.32;
 
   // A-Frame Wooden Stand
   const rackBase1 = new THREE.Mesh(
@@ -579,211 +579,9 @@ export function createEnvironment(scene: THREE.Scene): EnvironmentController {
 
   envGroup.add(rackGroup);
 
-  // 5. Retro Low-Poly Heroes in Nostalgic Heroic Poses
 
-  // Hero 1: The Valiant Knight (Near Weapon Rack)
-  const knightGroup = new THREE.Group();
-  knightGroup.position.set(-2.0, 1.48, 0.2);
-  knightGroup.rotation.y = 0.45; // Facing slightly towards counter & weapon rack
 
-  // Legs & Armored Greaves
-  const legGeo = new THREE.BoxGeometry(0.18, 0.65, 0.18);
-  const leftLeg = new THREE.Mesh(legGeo, steelMat);
-  leftLeg.position.set(-0.14, 0.33, 0);
-  const rightLeg = new THREE.Mesh(legGeo, steelMat);
-  rightLeg.position.set(0.14, 0.33, 0);
-  knightGroup.add(leftLeg, rightLeg);
-
-  // Armored Torso / Breastplate
-  const torso = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.6, 0.3),
-    steelMat
-  );
-  torso.position.set(0, 0.95, 0);
-  torso.castShadow = true;
-  knightGroup.add(torso);
-
-  // Golden Guild Belt & Buckle
-  const belt = new THREE.Mesh(
-    new THREE.BoxGeometry(0.52, 0.1, 0.32),
-    goldBrassMat
-  );
-  belt.position.set(0, 0.68, 0);
-  knightGroup.add(belt);
-
-  // Pauldrons (Shoulder Armor)
-  const pauldronGeo = new THREE.SphereGeometry(0.14, 8, 8);
-  const leftPauldron = new THREE.Mesh(pauldronGeo, steelMat);
-  leftPauldron.position.set(-0.32, 1.2, 0);
-  const rightPauldron = new THREE.Mesh(pauldronGeo, steelMat);
-  rightPauldron.position.set(0.32, 1.2, 0);
-  knightGroup.add(leftPauldron, rightPauldron);
-
-  // Armored Arms
-  const armGeo = new THREE.BoxGeometry(0.14, 0.5, 0.14);
-  const leftArm = new THREE.Mesh(armGeo, steelMat);
-  leftArm.position.set(-0.32, 0.92, 0.05);
-  leftArm.rotation.x = -0.2; // Hand resting near hip/sword
-  const rightArm = new THREE.Mesh(armGeo, steelMat);
-  rightArm.position.set(0.32, 0.92, -0.05);
-  knightGroup.add(leftArm, rightArm);
-
-  // Sheathed Hip Sword
-  const hipSword = new THREE.Group();
-  hipSword.position.set(-0.32, 0.7, 0.08);
-  hipSword.rotation.x = 0.5;
-  const scabbard = new THREE.Mesh(
-    new THREE.BoxGeometry(0.06, 0.7, 0.03),
-    darkWoodMat
-  );
-  const hGrip = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.02, 0.02, 0.15, 6),
-    goldBrassMat
-  );
-  hGrip.position.y = 0.42;
-  hipSword.add(scabbard, hGrip);
-  knightGroup.add(hipSword);
-
-  // Knight Helmet with Black Visor Slit
-  const helm = new THREE.Mesh(
-    new THREE.BoxGeometry(0.38, 0.42, 0.38),
-    steelMat
-  );
-  helm.position.set(0, 1.48, 0);
-  helm.castShadow = true;
-  knightGroup.add(helm);
-
-  const visorSlit = new THREE.Mesh(
-    new THREE.BoxGeometry(0.28, 0.06, 0.05),
-    ironMat
-  );
-  visorSlit.position.set(0, 1.48, 0.18);
-  knightGroup.add(visorSlit);
-
-  // Red Knight Plume Feather on Top
-  const plumeMat = new THREE.MeshStandardMaterial({
-    color: 0xef4444, // Vibrant knight scarlet
-    roughness: 0.5,
-  });
-  const plume = new THREE.Mesh(
-    new THREE.ConeGeometry(0.09, 0.35, 6),
-    plumeMat
-  );
-  plume.position.set(0, 1.76, -0.05);
-  plume.rotation.x = -0.4;
-  knightGroup.add(plume);
-
-  // Heroic Crimson Cape
-  const cape = new THREE.Mesh(
-    new THREE.BoxGeometry(0.48, 0.95, 0.04),
-    plumeMat
-  );
-  cape.position.set(0, 0.85, -0.18);
-  cape.rotation.x = 0.1;
-  cape.castShadow = true;
-  knightGroup.add(cape);
-
-  envGroup.add(knightGroup);
-
-  // Hero 2: The Arcane Mage / Scholar (Studying Quest Board)
-  const mageGroup = new THREE.Group();
-  mageGroup.position.set(2.1, 1.48, 0.2);
-  mageGroup.rotation.y = -0.55; // Looking directly at quest board
-
-  const robeMat = new THREE.MeshStandardMaterial({
-    color: 0x312e81, // Deep arcane indigo
-    roughness: 0.65,
-    flatShading: true,
-  });
-
-  const robeTrimMat = new THREE.MeshStandardMaterial({
-    color: 0xf59e0b, // Golden runes/trim
-    roughness: 0.3,
-  });
-
-  // Flowing Robe Skirt (Cone/Cylinder)
-  const skirt = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.25, 0.42, 0.85, 10),
-    robeMat
-  );
-  skirt.position.set(0, 0.42, 0);
-  skirt.castShadow = true;
-  mageGroup.add(skirt);
-
-  // Upper Robe Torso
-  const mageTorso = new THREE.Mesh(
-    new THREE.BoxGeometry(0.44, 0.55, 0.26),
-    robeMat
-  );
-  mageTorso.position.set(0, 0.95, 0);
-  mageTorso.castShadow = true;
-  mageGroup.add(mageTorso);
-
-  // Gold Embroidered Stole/Sash
-  const stole = new THREE.Mesh(
-    new THREE.BoxGeometry(0.46, 0.58, 0.04),
-    robeTrimMat
-  );
-  stole.position.set(0, 0.95, 0.12);
-  mageGroup.add(stole);
-
-  // Mage Hooded Head
-  const hood = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 8, 8),
-    robeMat
-  );
-  hood.position.set(0, 1.42, 0);
-  hood.castShadow = true;
-  mageGroup.add(hood);
-
-  // Pointed Wizard Hat
-  const hatBrim = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.42, 0.42, 0.04, 12),
-    robeMat
-  );
-  hatBrim.position.set(0, 1.55, 0);
-  const hatCone = new THREE.Mesh(
-    new THREE.ConeGeometry(0.28, 0.65, 10),
-    robeMat
-  );
-  hatCone.position.set(0, 1.88, -0.05);
-  hatCone.rotation.x = -0.15;
-  hatCone.castShadow = true;
-  mageGroup.add(hatBrim, hatCone);
-
-  // Mystic Arcane Staff
-  const staff = new THREE.Group();
-  staff.position.set(0.38, 0.85, 0.18);
-  const staffShaft = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.024, 0.024, 1.7, 8),
-    darkWoodMat
-  );
-  const staffCrystalMat = new THREE.MeshStandardMaterial({
-    color: 0x38bdf8,
-    emissive: 0x0284c7,
-    emissiveIntensity: 0.9,
-    roughness: 0.1,
-  });
-  const staffCrystal = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.09, 0),
-    staffCrystalMat
-  );
-  staffCrystal.position.y = 0.9;
-  staff.add(staffShaft, staffCrystal);
-  mageGroup.add(staff);
-
-  // Spellbook at waist
-  const book = new THREE.Mesh(
-    new THREE.BoxGeometry(0.12, 0.24, 0.32),
-    new THREE.MeshStandardMaterial({ color: 0x831843 })
-  );
-  book.position.set(-0.25, 0.72, 0.05);
-  book.rotation.y = 0.3;
-  mageGroup.add(book);
-
-  envGroup.add(mageGroup);
-
-  // 6. Medieval Street Lanterns on Plaza Edges
+  // 5. Medieval Street Lanterns on Plaza Edges
   const lanterns: { light: THREE.PointLight; flame: THREE.Mesh }[] = [];
   const createStreetLantern = (x: number, z: number) => {
     const lamp = new THREE.Group();
@@ -827,10 +625,10 @@ export function createEnvironment(scene: THREE.Scene): EnvironmentController {
     return lamp;
   };
 
-  envGroup.add(createStreetLantern(-4.4, 1.8));
-  envGroup.add(createStreetLantern(4.4, 1.8));
+  envGroup.add(createStreetLantern(-3.8, 2.2));
+  envGroup.add(createStreetLantern(3.8, 2.2));
 
-  // 7. Ambient Morning Dust Motes & Golden Dawn Sparkles
+  // 6. Ambient Morning Dust Motes & Golden Dawn Sparkles
   const sparkleCount = 24;
   const sparkleGeo = new THREE.OctahedronGeometry(0.05, 0);
   const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
@@ -839,9 +637,9 @@ export function createEnvironment(scene: THREE.Scene): EnvironmentController {
   for (let i = 0; i < sparkleCount; i++) {
     const sp = new THREE.Mesh(sparkleGeo, sparkleMat);
     sp.position.set(
-      (Math.random() - 0.5) * 9,
-      1.6 + Math.random() * 3.2,
-      (Math.random() - 0.5) * 6 - 0.5
+      (Math.random() - 0.5) * 8,
+      1.6 + Math.random() * 3.0,
+      (Math.random() - 0.5) * 3 + 1.6
     );
     sparkles.push(sp);
     scene.add(sp);

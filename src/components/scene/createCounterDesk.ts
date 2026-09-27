@@ -83,25 +83,9 @@ function createGrimoireCanvasTexture(): THREE.CanvasTexture {
     ctx.lineWidth = 3;
     ctx.strokeRect(22, 22, canvas.width - 44, canvas.height - 44);
 
-    // Corner decorative emblems
-    ctx.font = "28px system-ui, -apple-system, sans-serif";
-    ctx.fillText("⚜️", 36, 56);
-    ctx.fillText("⚜️", canvas.width - 64, 56);
-    ctx.fillText("⚜️", 36, canvas.height - 36);
-    ctx.fillText("⚜️", canvas.width - 64, canvas.height - 36);
-
-    // Header badge
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#92400e";
-    ctx.font = "bold 26px system-ui, -apple-system, sans-serif";
-    ctx.fillText(
-      "📜 GRIMÓRIO SAGRADO • GUILDA DE SOFT SKILLS 📜",
-      canvas.width / 2,
-      85
-    );
-
     // Main Title
     ctx.fillStyle = "#1e293b";
+    ctx.textAlign = "center";
     ctx.font = "bold 44px system-ui, -apple-system, sans-serif";
     ctx.fillText("Os 4 Pergaminhos de Autoconhecimento", canvas.width / 2, 150);
 
@@ -151,11 +135,7 @@ function createGrimoireCanvasTexture(): THREE.CanvasTexture {
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 28px system-ui, -apple-system, sans-serif";
-    ctx.fillText(
-      "TOQUE AQUI PARA ABRIR OS PERGAMINHOS EM TAMANHO GRANDE",
-      canvas.width / 2,
-      478
-    );
+    ctx.fillText("Iniciar Jornada", canvas.width / 2, 478);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -343,8 +323,8 @@ export function createCounterDesk(): CounterDeskController {
 
   // 5. Large Central Grimoire / Open Scroll on the counter
   const grimoireGroup = new THREE.Group();
-  const basePosY = 1.09;
-  grimoireGroup.position.set(0, basePosY, 0.68);
+  const basePosY = 1.29;
+  grimoireGroup.position.set(0, basePosY, 1.68);
   grimoireGroup.rotation.x = -0.38; // Tilted nicely towards the camera
 
   // Main Open Grimoire Slab

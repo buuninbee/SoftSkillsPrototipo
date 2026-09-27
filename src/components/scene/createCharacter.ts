@@ -221,13 +221,6 @@ export function createCharacter(): CharacterController {
     roughness: 0.75,
   });
 
-  const coinMat = new THREE.MeshStandardMaterial({
-    color: 0xf59e0b,
-    emissive: 0xd97706,
-    emissiveIntensity: 0.45,
-    metalness: 0.92,
-    roughness: 0.18,
-  });
 
   // 2. Legs (standing stably behind counter)
   const legGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.5, 8);
@@ -505,22 +498,6 @@ export function createCharacter(): CharacterController {
   rightArmGroup.rotation.z = -0.25;
   characterGroup.add(rightArmGroup);
 
-  // 6. Floating Shiny Gold RPG Coin above head
-  const questMarkerGroup = new THREE.Group();
-  questMarkerGroup.position.set(0, 1.88, 0);
-
-  const coinGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.035, 20);
-  coinGeo.rotateX(Math.PI / 2);
-  const coinMesh = new THREE.Mesh(coinGeo, coinMat);
-  questMarkerGroup.add(coinMesh);
-
-  // Star symbol on the gold coin
-  const coinStarGeo = new THREE.OctahedronGeometry(0.08, 0);
-  const coinStar = new THREE.Mesh(coinStarGeo, goldBuckleMat);
-  coinStar.position.set(0, 0, 0.02);
-  questMarkerGroup.add(coinStar);
-
-  characterGroup.add(questMarkerGroup);
 
   // 7. 3D Floating Speech Balloon (CENTERED AND ENLARGED)
   const speechBubbleGroup = new THREE.Group();
@@ -561,10 +538,6 @@ export function createCharacter(): CharacterController {
     headGroup.rotation.y = naturalLook + mouse.x * 0.18;
     headGroup.rotation.x = -mouse.y * 0.12 + Math.sin(time * 0.8) * 0.025;
     headGroup.rotation.z = Math.sin(time * 0.6) * 0.03;
-
-    // Gold coin spin & hover
-    questMarkerGroup.position.y = 1.88 + Math.sin(time * 3.0) * 0.04;
-    questMarkerGroup.rotation.y += 0.035;
 
     // Centered speech bubble gentle float
     speechBubbleGroup.position.y = 2.48 + Math.sin(time * 2.0) * 0.03;
@@ -611,7 +584,6 @@ export function createCharacter(): CharacterController {
       vest,
       head,
       beretCrown,
-      coinMesh,
       speechBubbleMesh,
       pouchBody,
     ],
