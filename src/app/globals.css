@@ -24,3 +24,57 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes float-rpg {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    filter: drop-shadow(0 3px 6px rgba(217, 119, 6, 0.25));
+  }
+  50% {
+    transform: translateY(-5px) scale(1.04);
+    filter: drop-shadow(0 8px 12px rgba(217, 119, 6, 0.45));
+  }
+}
+
+.animate-float-rpg {
+  animation: float-rpg 3s ease-in-out infinite;
+}
+
+@keyframes pop-in-rpg {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-pop-in-rpg {
+  animation: pop-in-rpg 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes celebrate-badge {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-celebrate-badge {
+  animation: celebrate-badge 0.5s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+

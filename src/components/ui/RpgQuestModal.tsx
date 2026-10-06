@@ -2,19 +2,24 @@
 
 import { useState } from "react";
 import { MerchantSkillQuest, SkillQuestOption } from "@/data/dialogueData";
+import QuestIcon from "@/components/ui/QuestIcon";
 
 interface RpgQuestModalProps {
   quest: MerchantSkillQuest | null;
   onClose: () => void;
   onCompleteOption: (option: SkillQuestOption) => void;
+  userName?: string;
 }
 
 export default function RpgQuestModal({
   quest,
   onClose,
   onCompleteOption,
+  userName,
 }: RpgQuestModalProps) {
-  const [selectedOption, setSelectedOption] = useState<SkillQuestOption | null>(null);
+  const [selectedOption, setSelectedOption] = useState<SkillQuestOption | null>(
+    null
+  );
 
   if (!quest) return null;
 
@@ -31,9 +36,6 @@ export default function RpgQuestModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-xl bg-[#fffdf5] border-2 border-amber-600/80 rounded-2xl shadow-2xl overflow-hidden p-6 sm:p-7 text-slate-800">
-        {/* Ornate Gold Header Bar */}
-        <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-400 via-amber-600 to-amber-500" />
-
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -45,13 +47,10 @@ export default function RpgQuestModal({
 
         {/* Quest Badge & Title */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-100/90 border border-amber-300 flex items-center justify-center text-3xl shadow-inner">
-            {quest.icon}
+          <div className="rounded-2xl flex items-center justify-center text-3xl overflow-hidden p-1.5">
+            <QuestIcon icon={quest.icon} alt={quest.title} />
           </div>
           <div>
-            <span className="inline-block px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-amber-900 bg-amber-200/80 rounded-full border border-amber-400/50">
-              {quest.badge}
-            </span>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
               {quest.title}
             </h2>
@@ -67,7 +66,11 @@ export default function RpgQuestModal({
                 Mercador de RPG diz:
               </p>
               <p className="text-sm text-slate-700 italic mt-0.5 leading-relaxed">
-                &ldquo;{quest.intro}&rdquo;
+                &ldquo;
+                {userName
+                  ? quest.intro.replace(/aventureiro/gi, userName)
+                  : quest.intro}
+                &rdquo;
               </p>
             </div>
           </div>
@@ -96,9 +99,6 @@ export default function RpgQuestModal({
                   <span className="font-bold text-sm text-slate-900 group-hover:text-amber-900">
                     {opt.label}
                   </span>
-                  <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
-                    +{opt.xp} XP
-                  </span>
                 </div>
                 <p className="text-xs text-slate-600 group-hover:text-slate-700 leading-relaxed">
                   {opt.description}
@@ -108,16 +108,17 @@ export default function RpgQuestModal({
           </div>
         ) : (
           /* Result Card after answering */
-          <div className="p-4 bg-emerald-50 border-2 border-emerald-400/80 rounded-xl mb-4 text-center animate-in zoom-in-95 duration-200">
-            <div className="text-3xl mb-1">🎉</div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              Estilo Revelado na Guilda
+          <div className="relative p-5 bg-gradient-to-b from-amber-50 to-amber-100/70 border-2 border-amber-500 rounded-2xl mb-4 text-center shadow-lg shadow-amber-950/10 ring-1 ring-amber-300/50 animate-pop-in-rpg">
+            <div className="text-3xl mb-1.5 inline-block animate-celebrate-badge">
+              🎉
+            </div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900/90">
+              Estilo Revelado
             </h4>
-            <p className="text-lg font-black text-emerald-950 mt-1">
-              {selectedOption.styleResult}
-            </p>
-            <p className="text-xs text-emerald-700 mt-1">
-              Você conquistou <span className="font-bold">+{selectedOption.xp} XP</span> e impressionou o Mercador!
+            <p className="text-lg font-black text-amber-950 mt-1">Gênio</p>
+            <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent mx-auto my-2" />
+            <p className="text-xs font-medium text-amber-800/90 mt-1">
+              Você conquistou e impressionou o Mercador!
             </p>
           </div>
         )}
