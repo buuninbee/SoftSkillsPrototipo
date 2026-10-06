@@ -91,10 +91,10 @@ function createGrimoireCanvasTexture(): THREE.CanvasTexture {
 
     // Skill pills preview
     const skills = [
-      { name: "💖 Inteligência Emocional", sub: "Empatia & Equilíbrio" },
-      { name: "👑 Estilos de Liderança", sub: "Condução & Visão" },
-      { name: "🔥 Motivação no trabalho", sub: "Propósito & Energia" },
-      { name: "💡 Criatividade", sub: "Inovação & Resolução" },
+      { name: "Inteligência Emocional" },
+      { name: "Estilos de Liderança" },
+      { name: "Motivação no trabalho" },
+      { name: "Criatividade" },
     ];
 
     const colW = 440;
@@ -123,7 +123,7 @@ function createGrimoireCanvasTexture(): THREE.CanvasTexture {
 
       ctx.fillStyle = "#64748b";
       ctx.font = "500 20px system-ui, -apple-system, sans-serif";
-      ctx.fillText(s.sub, x + 20, y + 62);
+      //ctx.fillText( x + 20, y + 62);
     });
 
     // Big Glowing Call-to-Action Bar
